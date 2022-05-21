@@ -1,4 +1,3 @@
-// gcc jacobiseq.c -fopenmp -Wall -O3 -Ofast -march=native -std=c17 -o jacobiseq
 #include <math.h>
 #include <omp.h>
 #include <stdio.h>
