@@ -1,6 +1,9 @@
 # Name of the project
 PROJ_NAME=jacobiseq jacobipar
 
+# Headers
+C_HEADERS = linearSystem.h
+
 # Compiler
 CC=gcc
 
@@ -8,7 +11,8 @@ CC=gcc
 PROG = -1
 
 # Flags for compiler
-CC_FLAGS=-Wall					\
+CC_FLAGS=-I						\
+		 -Wall					\
 		 -Wextra				\
 		 -Wshadow				\
 		 -Wundef				\
@@ -29,7 +33,7 @@ all: $(PROJ_NAME)
 
 $(PROJ_NAME):
 	@echo "Compiling $@"
-	@$(CC) -o $@ $@.c $(CC_FLAGS) $(LIBS)
+	@$(CC) -o $@ $(C_HEADERS) $@.c $(CC_FLAGS) $(LIBS)
 	
 .PHONY: run
 run:
@@ -44,7 +48,6 @@ run:
 	fi
 
 .PHONY: clean
-
 clean:
 	@echo "Cleaning"
-	@rm -rf $(PROJ_NAME) *~
+	@rm -rf $(PROJ_NAME)
