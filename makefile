@@ -1,9 +1,6 @@
 # Name of the project
 PROJ_NAME=jacobiseq jacobipar
 
-# Headers
-C_HEADERS = linearSystem.h
-
 # Compiler
 CC=gcc
 
@@ -33,7 +30,7 @@ all: $(PROJ_NAME)
 
 $(PROJ_NAME):
 	@echo "Compiling $@"
-	@$(CC) -o $@ $(C_HEADERS) $@.c $(CC_FLAGS) $(LIBS)
+	@$(CC) -o $@ $@.c $(CC_FLAGS) $(LIBS)
 	
 .PHONY: run
 run:
