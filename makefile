@@ -1,3 +1,14 @@
+#***********************************************************
+# Computacao de Alto Desempenho - SSC0903                  *
+#                                                          *
+# Alessandro de Freitas Guerreiro   No USP 11233891        *
+# Bruno Alvarenga Colturato         No USP 11200251        *
+# Murilo Mussatto                   No USP 11234245        *
+#                                                          *
+# Sao Carlos - SP                                          *
+# 2022                                                     *
+# **********************************************************
+ 
 # Name of the project
 PROJ_NAME=jacobiseq jacobipar
 
@@ -25,7 +36,7 @@ CC_FLAGS=-I						\
 LIBS=-lm -fopenmp
 
 # Compilation
-all: $(PROJ_NAME)
+all: clean $(PROJ_NAME)
 	@echo "Done"
 
 $(PROJ_NAME):

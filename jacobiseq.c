@@ -1,3 +1,19 @@
+/************************************************************
+ * Computacao de Alto Desempenho - SSC0903                  *
+ *                                                          *
+ * Alessandro de Freitas Guerreiro   No USP 11233891        *
+ * Bruno Alvarenga Colturato         No USP 11200251        *
+ * Murilo Mussatto                   No USP 11234245        *
+ *                                                          *
+ * Sao Carlos - SP                                          *
+ * 2022                                                     *
+ *                                                          *
+ * To run the code do:                                      *
+ * make                                                     *
+ * ./jacobiseq <N>                                          *
+ * **********************************************************
+ */
+
 #include <math.h>
 #include <omp.h>
 #include <stdio.h>
