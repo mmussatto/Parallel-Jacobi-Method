@@ -5,6 +5,7 @@
 
 #define MIN_DEVIATION 1e-7
 #define MAX_ITERATIONS 100
+#pragma GCC diagnostic ignored "-Wunused-result"
 
 typedef struct jacobiRet {
     double* solution;
@@ -138,6 +139,36 @@ void showLinearSystem(double** A, double* B, double* X, int matrixSize) {
 }
 
 /**
+ * @brief Ask user an equation line and compare the result with expected B matrix value
+ * 
+ * @param A             matrix A
+ * @param B             vector B
+ * @param X             vector X
+ * @param matrixSize    size of the matrix
+ */
+void compareResult(double** A, double* B, double* X, int matrixSize) {
+    int equation;
+    printf("Choose an equation to evaluate: ");
+    scanf("%d", &equation);
+
+    // Calculate solution and compare to B[]
+    if(equation >= 0 && equation < matrixSize) {
+        double sum = 0;
+        for (int i = 0; i < matrixSize; i++) {
+            sum += A[equation][i] * X[i];
+        }
+
+        printf("Compare of results:\n");
+        printf(" Calculated result = %.8lf\n", sum);
+        printf(" Expected result = %.8lf\n", B[equation]);
+        printf(" Deviation = %.8lf\n", sum-B[equation]);
+    }
+    else {
+        printf("Equation number out of range\n");
+    }
+}
+
+/**
  * @brief Implementation of the parallel Jacobi method.
  * 
  * @param A                 diagonally dominant matrix (A) of the linear system
@@ -207,9 +238,12 @@ int main(int argc, char** args) {
     printf("Solved %dx%d linear system in %.7lf seconds after %d iterations using %d threads\n", matrixSize, matrixSize, endTime - startTime, jacobiRet.iterationsTaken, numberOfThreads);
     
     //If matriz has order lower than 4, print the Linear System in the terminal
-    if (matrixSize <= 3) {
+    if (matrixSize <= 20) {
         showLinearSystem(A, B, jacobiRet.solution, matrixSize);
     }
+
+    // Ask user to choose an equation
+    compareResult(A, B, jacobiRet.solution, matrixSize);
 
     //Deallocate memory
     for (int i = 0; i < matrixSize; i++)
