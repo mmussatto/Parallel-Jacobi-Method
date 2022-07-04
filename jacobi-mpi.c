@@ -256,15 +256,6 @@ int main(int argc, char** args) {
     int numberOfProcess = atoi(args[2]);
     int numberOfThreads = atoi(args[3]);
 
-    // Create Matrix A
-    double** A = randomDiagonallyDominantMatrix(matrixSize);
-
-    // Create Vector B
-    double* B = randomVector(matrixSize);
-
-    // Solution
-    JacobiRet jacobiRet;
-
     // MPI initialization for OMP
     int mpiCommSize, provided, myRank, errcodes[numberOfProcess];
     MPI_Comm parentcomm, intercomm;
@@ -273,12 +264,23 @@ int main(int argc, char** args) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     MPI_Comm_get_parent(&parentcomm);
 
-    double time;
+    // Spawn children
     if (parentcomm == MPI_COMM_NULL && myRank == 0) {
         showProvided(provided);
         MPI_Comm_spawn("jacobipar", &args[1], numberOfProcess, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &intercomm, errcodes);
+    }
 
-        // Receive jacobiRet, reduction by max time
+    // Create Matrix A
+    double** A = randomDiagonallyDominantMatrix(matrixSize);
+
+    // Create Vector B
+    double* B = randomVector(matrixSize);
+
+    // Solution
+    JacobiRet jacobiRet;
+    double time;
+    if (parentcomm == MPI_COMM_NULL && myRank == 0) {
+        // Receive jacobiRet and time taken
         MPI_Status* status = (MPI_Status*)malloc(sizeof(MPI_Status));
         MPI_Recv(&time, 1, MPI_DOUBLE, 0, 0, intercomm, status);
         MPI_Recv(&jacobiRet.iterationsTaken, 1, MPI_INT, 0, 0, intercomm, status);
@@ -306,11 +308,10 @@ int main(int argc, char** args) {
         // Reduction by max on time
         double recvTime;
         MPI_Reduce(&time, &recvTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        time = recvTime;
 
         // Root sending the result to master
         if (myRank == 0) {
-            MPI_Send(&time, 1, MPI_DOUBLE, 0, 0, parentcomm);
+            MPI_Send(&recvTime, 1, MPI_DOUBLE, 0, 0, parentcomm);
             MPI_Send(&jacobiRet.iterationsTaken, 1, MPI_INT, 0, 0, parentcomm);
             MPI_Send(jacobiRet.solution, matrixSize, MPI_DOUBLE, 0, 0, parentcomm);
         }
