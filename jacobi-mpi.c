@@ -1,3 +1,18 @@
+/************************************************************
+ * Computacao de Alto Desempenho - SSC0903                  *
+ *                                                          *
+ * Alessandro de Freitas Guerreiro   No USP 11233891        *
+ * Bruno Alvarenga Colturato         No USP 11200251        *
+ * Murilo Mussatto                   No USP 11234245        *
+ *                                                          *
+ * Sao Carlos - SP                                          *
+ * 2022                                                     *
+ *                                                          *
+ * To run the code do:                                      *
+ * make                                                     *
+ * make run PROG=jacobipar                                  *
+ * **********************************************************
+ */
 #include <math.h>
 #include <mpi.h>
 #include <omp.h>
@@ -201,6 +216,8 @@ void compareResult(double** A, double* B, double* X, int matrixSize) {
  * @param B                 vector of constant terms (B) of the linear system
  * @param matrixSize        size of the matrix A
  * @param numberOfThreads   number of threads
+ * @param numberOfProcesses number of processes
+ * @param myRank            process rank in MPI_COMM_WORLD
  * @return JacobiRet        structure containing vector of solutions and number of iterations taken
  */
 JacobiRet jacobipar(double** A, double* B, int matrixSize, int numberOfThreads, int numberOfProcesses, int myRank) {
@@ -211,6 +228,7 @@ JacobiRet jacobipar(double** A, double* B, int matrixSize, int numberOfThreads, 
 
     double deviation = INFINITY;
 
+    // displacements and send ammounts to be used in N-N broadcast of the estimatives of X
     int displacements[numberOfProcesses];
     int sendAmmount[numberOfProcesses];
     for (int i = 0; i < numberOfProcesses; i++) {
@@ -218,6 +236,7 @@ JacobiRet jacobipar(double** A, double* B, int matrixSize, int numberOfThreads, 
         sendAmmount[i] = matrixSize / numberOfProcesses;
     }
     sendAmmount[numberOfProcesses - 1] += matrixSize % numberOfProcesses;
+
     for (iterationCounter = 0; deviation >= MIN_DEVIATION && iterationCounter <= MAX_ITERATIONS; iterationCounter++) {
         deviation = 0;
         #pragma omp parallel for num_threads(numberOfThreads) shared(matrixSize, A, B, prevX, currX) reduction(max : deviation)
@@ -235,6 +254,7 @@ JacobiRet jacobipar(double** A, double* B, int matrixSize, int numberOfThreads, 
             double diff = fabs(currX[i] - prevX[i]);
             deviation = (diff > deviation) ? diff : deviation;
         }
+        // N-N broadcast of the estimatives of X and reduction to find the maximum deviation between all nodes
         MPI_Allgatherv(&currX[displacements[myRank]], sendAmmount[myRank], MPI_DOUBLE, prevX, sendAmmount, displacements, MPI_DOUBLE, MPI_COMM_WORLD);
         MPI_Allreduce(&deviation, &deviation, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     }
@@ -246,18 +266,18 @@ JacobiRet jacobipar(double** A, double* B, int matrixSize, int numberOfThreads, 
 
 int main(int argc, char** args) {
     if (argc != 4) {
-        printf("Error: usage ./jacobipar <N> <P> <T>, where N is the square matrix dimensions, P is the number of MPI processors, and T is the desired number of threads\n");
+        printf("Error: usage mpirun -np 1 --hostfile <hostfile> jacobipar <N> <P> <T>, where N is the square matrix dimensions, P is the number of MPI processors, and T is the desired number of threads\n");
         return 0;
     }
 
     // Fixes a random seed and gets the desired matrixSize and numberOfThreads
     srand(69420);
     int matrixSize = atoi(args[1]);
-    int numberOfProcess = atoi(args[2]);
+    int numberOfProcesses = atoi(args[2]);
     int numberOfThreads = atoi(args[3]);
 
     // MPI initialization for OMP
-    int mpiCommSize, provided, myRank, errcodes[numberOfProcess];
+    int mpiCommSize, provided, myRank, errcodes[numberOfProcesses];
     MPI_Comm parentcomm, intercomm;
     MPI_Init_thread(&argc, &args, MPI_THREAD_SINGLE, &provided);
     MPI_Comm_size(MPI_COMM_WORLD, &mpiCommSize);
@@ -267,7 +287,7 @@ int main(int argc, char** args) {
     // Spawn children
     if (parentcomm == MPI_COMM_NULL && myRank == 0) {
         showProvided(provided);
-        MPI_Comm_spawn("jacobipar", &args[1], numberOfProcess, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &intercomm, errcodes);
+        MPI_Comm_spawn("jacobipar", &args[1], numberOfProcesses, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &intercomm, errcodes);
     }
 
     // Create Matrix A
@@ -289,7 +309,7 @@ int main(int argc, char** args) {
         free(status);
 
         // Print the time needed to solve the Linear System, the number of iterations and the number of threads
-        printf("Solved %dx%d linear system in %.7lf seconds after %d iterations using %d processor with %d threads each\n", matrixSize, matrixSize, time, jacobiRet.iterationsTaken, numberOfProcess, numberOfThreads);
+        printf("Solved %dx%d linear system in %.7lf seconds after %d iterations using %d processor with %d threads each\n", matrixSize, matrixSize, time, jacobiRet.iterationsTaken, numberOfProcesses, numberOfThreads);
 
         // If matriz has order lower than 4, print the Linear System in the terminal
         if (matrixSize <= 20) {
