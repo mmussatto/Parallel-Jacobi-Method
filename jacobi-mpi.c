@@ -24,7 +24,6 @@
 
 #define MIN_DEVIATION 1e-7
 #define MAX_ITERATIONS 100
-#pragma GCC diagnostic ignored "-Wunused-result"
 
 typedef struct jacobiRet {
     double* solution;
